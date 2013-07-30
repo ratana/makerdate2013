@@ -30,11 +30,20 @@ public interface Component {
   public void drawBounds(Viewport viewport);
 
   /*
+  Are these two components colliding?
+   */
+  public boolean isColliding(Component other);
+}
+
+
+// Components that move (can be played forward in time)
+public interface PlayableComponent extends Component {
+  /*
   Play forward in time by 'time_step' units of time.
-  (For components that move, or are animated)
-  */
+   */
   public void Play(float time_step);
 }
+
 
 /**
  * A collection of components - a single component can also implement ComponentCollection, such as a Wall which will have 2 endpoints which can be interacted with
@@ -64,6 +73,11 @@ public class Wall implements Component, ComponentCollection {
 
     this.boundingBox = new Area(min(a.center.x, b.center.x), min(a.center.y, b.center.y), abs(a.center.x-b.center.x), abs(a.center.y-b.center.y));
     updateGeometry();
+  }
+
+  public boolean isColliding(Component other) {
+    // TODO(ciaran): Implement collision detection
+    return false;
   }
 
   public void moveTo(PVector objLocation) {
@@ -144,6 +158,15 @@ public class Wall implements Component, ComponentCollection {
  * Represents a point in space, whose radius determines its bounding box for hit-test purposes
  */
 public class Point implements Component {
+  // TODO(ciaran/adam): boundingBox is a redundant object, as it can be computed from center+radius at any point.
+  // If 'isPresent' was being called much more frequently than moveTo or setRadius, then it would make sense to
+  // compute it and save its value. However the ball will be in constant motion, meaning that each time center is
+  // updated, the bounding box needs to be updated too.
+  // This is pretty inefficient, given that the game does not use the bounding box. I'm worried it will slow the graphics down
+  // when there are a lot of balls on screen.
+  // Suggestion: (i) Remove boundingBox, and only compute it inside isPresent()
+  // or (ii) If Component was implemented as an abstract class instead of an interface, you could give it an 'editable' boolean flag.
+  // When set to true (in the LevelDesigner), it would update boundingBox. When false, in the game, it would not update it.
   protected Area boundingBox;
   protected PVector center;
   protected float radius;
@@ -156,6 +179,11 @@ public class Point implements Component {
     boundingBox.origin.y = center.y-radius;
     boundingBox.width = radius*2;
     boundingBox.height = radius*2;
+  }
+
+  public boolean isColliding(Component other) {
+    // TODO(ciaran): Implement collision detection
+    return false;
   }
 
   public void moveTo(PVector objLocation) {    
@@ -200,17 +228,30 @@ public class Point implements Component {
 /**
  * Represents a physical ball - with mass, velocity, etc.
  */
-public class Ball extends Point implements ComponentCollection {
+public class Ball extends Point implements PlayableComponent, ComponentCollection {
 
   private static final float CONTROL_RADIUS = 0.01;
   private static final float MIN_CONTROL_RADIUS = 0.005;
   private Point a, b; // control points for editing
+  protected PVector velocity;
+  float mass;
 
-  public Ball(float x, float y, float radius, color objColor) {
+
+  public Ball(float x, float y, float radius, color objColor, float vx, float vy, float mass) {
     super(x, y, radius, objColor);
     a = new Point(center.x-radius+radius/4, center.y-radius+radius/4, radius/4, objColor);
     b = new Point(center.x+radius-radius/4, center.y+radius-radius/4, radius/4, objColor);
+    this.mass = mass;
+    this.velocity = new PVector(vx, vy);
   }
+
+  public Ball(float x, float y, float radius, color objColor) {
+    this(x, y, radius, objColor, 0, 0, 1.0);
+  }
+
+  public void Play(float time_step) {
+  }
+
 
   public void moveTo(float objX, float objY) {
     super.moveTo(objX, objY);
@@ -278,10 +319,15 @@ public class Box implements Component, ComponentCollection {
     b = new Point(botX, (botY-topY)/2, CONTROL_RADIUS, objColor);
   }  
 
+  public boolean isColliding(Component other) {
+    // TODO(ciaran): Implement collision detection
+    return false;
+  }
+
   public boolean isPresent(PVector location) {
     return boundingBox.isPresent(location) || a.isPresent(location) || b.isPresent(location);
   }
-  
+
   public void moveTo(PVector objLocation) {
     // calculate the midpoint of the line, and set the new midpoint to (x, y) by moving the end points
     float midX = boundingBox.origin.x + boundingBox.width/2;
@@ -292,13 +338,13 @@ public class Box implements Component, ComponentCollection {
     a.moveTo(boundingBox.origin.x + boundingBox.width/2, boundingBox.origin.y);
     b.moveTo(boundingBox.origin.x + boundingBox.width, boundingBox.origin.y + boundingBox.height/2);
   }
-  
+
   private void updateGeometry() {
     boundingBox.width = abs(b.center.x - boundingBox.origin.x);
     //float oldHeight = boundingBox.height;
     boundingBox.height = abs(a.center.y - (boundingBox.origin.y + boundingBox.height));
     boundingBox.origin.y = a.center.y;
-    
+
     a.moveTo(boundingBox.origin.x + boundingBox.width/2, boundingBox.origin.y);
     b.moveTo(boundingBox.origin.x + boundingBox.width, boundingBox.origin.y + boundingBox.height/2);
   }
@@ -318,7 +364,7 @@ public class Box implements Component, ComponentCollection {
     rect(viewport.origin.x + viewport.scaleValue(boundingBox.origin.x), viewport.origin.y + viewport.scaleValue(boundingBox.origin.y), 
     viewport.scaleValue(boundingBox.width), viewport.scaleValue(boundingBox.height));
   }
-  
+
 
   public Component componentAt(PVector location) {
     if (a.isPresent(location)) {
@@ -327,5 +373,6 @@ public class Box implements Component, ComponentCollection {
       return b;
     }
     return this;
-  }  
+  }
 }
+
