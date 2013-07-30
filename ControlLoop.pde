@@ -1,7 +1,6 @@
 
 abstract class ControlLoop {
   protected Viewport viewport;
-  private boolean mouseInBounds = false;  
 
   public ControlLoop(Viewport viewport) {
     this.viewport = viewport;
@@ -11,11 +10,10 @@ abstract class ControlLoop {
   }
 
   public void draw() {
-    mouseInBounds = viewport.isMousePresent();
   }
 
   public boolean isMouseInBounds() {
-    return mouseInBounds;
+    return viewport.isMousePresent();
   }
 
   public void mousePressed() {

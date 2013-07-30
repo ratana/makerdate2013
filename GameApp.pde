@@ -16,6 +16,8 @@ class GameApp extends ControlLoop {
     xpos = viewport.width/2;
     ypos = viewport.height/2;
   }
+  
+  
   void draw() {
     super.draw();
     fill(50);

@@ -22,6 +22,8 @@ void setup() {
   size(totalWidth, totalHeight);
   frameRate(30);
   ellipseMode(RADIUS);
+  
+  smooth(4);
 }
 
 void draw() {

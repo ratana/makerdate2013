@@ -28,6 +28,12 @@ public interface Component {
    * draws the bounds of the component
    */
   public void drawBounds(Viewport viewport);
+
+  /*
+  Play forward in time by 'time_step' units of time.
+  (For components that move, or are animated)
+  */
+  public void Play(float time_step);
 }
 
 /**
