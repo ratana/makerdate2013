@@ -276,6 +276,8 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
     if (other instanceof Wall) {
       // Assume ball will collide with the wall in the next time step if we don't change its velocity
       // Assume ball moving towards wall currently.
+      
+      // TODO(ciaran): finish porting this code.
       /*
       Vector ball_pos = new Vector(x, y);
       Vector ball_vel = new Vector(vx, vy);
@@ -304,7 +306,7 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
            
       //new Vector(other.x-x, other.y-y).unit();
       PVector other_vel = ball.velocity;
-      PVector original_v1 = velocity.get(); //new Vector(vx, vy).subtract(other_vel);
+      PVector original_v1 = velocity.get(); 
       original_v1.sub(other_vel);
       
       velocity = DoImpact(original_v1, n, (mass-ball.mass)/(mass+ball.mass));
@@ -312,11 +314,6 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
       ball.velocity = n.get();
       ball.velocity.mult(2*mass/(mass+ball.mass) * original_v1.dot(n));
       ball.velocity.add(other_vel);
-
-      //vx = new_v1.x;
-      //vy = new_v1.y;
-      //other.vx = new_v2.x;
-      //other.vy = new_v2.y;
     } else {
       println("Unknown type: " + other);
     }
