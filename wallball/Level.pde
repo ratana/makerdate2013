@@ -11,9 +11,13 @@ class Level {
     currentState = initialState;
     
     // TODO: remove all this
-    Component ball0 = new Ball(0.0, 0.0, 0.15, color(255, 0, 255));
-    Component ball1 = new Ball(0.1, 0.1, 0.05, color(255, 0, 0));
-    Component ball2 = new Ball(0.5, 0.1, 0.1, color(0, 255, 0));
+    Component ball0 = new Ball(0.3, 0.3, 0.07, color(255, 0, 255));
+    Component ball1 = new Ball(0.4, 0.4, 0.05, color(255, 0, 0));
+    Component ball2 = new Ball(0.15, 0.45, 0.1, color(0, 255, 0));
+    Component ball3 = new Ball(0.7, 0.7, 0.19, color(155, 0, 155));
+    setRandomVelocity((Ball)ball0);
+    setRandomVelocity((Ball)ball1);
+    setRandomVelocity((Ball)ball2);
     
     Wall wall1 = new Wall(0.4, 0.6, 0.5, 0.7, color(0, 0, 255));
     Wall wall2 = new Wall(0.7, 0.8, 0.9, 0.2, color(0, 0, 255));
@@ -30,6 +34,7 @@ class Level {
     initialState.addComponent(ball0);
     initialState.addComponent(ball1);
     initialState.addComponent(ball2);
+    initialState.addComponent(ball3);
     initialState.addComponent(wall1);
     initialState.addComponent(wall2);
     initialState.addComponent(wall3);
@@ -38,5 +43,13 @@ class Level {
     initialState.addComponent(wall6);
     initialState.addComponent(box);
     initialState.addComponent(box2);
+  }
+  
+  void draw(Viewport viewport) {
+    currentState.draw(viewport);
+  }
+  
+  void update(float time_step) {
+    currentState.update(time_step);
   }
 }

@@ -42,6 +42,11 @@ public interface PlayableComponent extends Component {
   Play forward in time by 'time_step' units of time.
    */
   public void Play(float time_step);
+
+  /*
+    Deflect off other component. Handle impact dynamics.
+   */
+  public void Deflect(Component other);
 }
 
 
@@ -65,6 +70,7 @@ public class Wall implements Component, ComponentCollection {
   protected Point a, b; // control points
   protected Area boundingBox;
   protected color objColor;
+  protected float len;
 
   public Wall(float topX, float topY, float botX, float botY, color objColor) {
     this.objColor = objColor;
@@ -96,6 +102,8 @@ public class Wall implements Component, ComponentCollection {
     boundingBox.origin.y = min(a.center.y-a.radius, b.center.y-b.radius);
     boundingBox.width = abs((a.center.x)-(b.center.x)) + a.radius * 2;
     boundingBox.height = abs((a.center.y)-(b.center.y)) + a.radius * 2;
+
+    len = a.center.dist(b.center);
 
     // resize control point/endpoint size
     float length = sqrt((a.center.x - b.center.x)*(a.center.x - b.center.x) + (a.center.y-b.center.y)*(a.center.y-b.center.y));
@@ -182,7 +190,16 @@ public class Point implements Component {
   }
 
   public boolean isColliding(Component other) {
-    // TODO(ciaran): Implement collision detection
+    if (other instanceof Ball) {
+      // TODO(ciaran): update this to return false if they're moving away.
+      Ball ball = (Ball)other;
+      if (center.dist(ball.center) < (radius + ball.radius)) {
+        return true;
+      }
+      return false;
+    }
+    
+    // TODO(ciaran): Implement WALL collision detection
     return false;
   }
 
@@ -250,6 +267,59 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
   }
 
   public void Play(float time_step) {
+    PVector tmp = velocity.get();
+    tmp.mult(time_step);
+    center.add(tmp);
+  }
+
+  void Deflect(Component other) {
+    if (other instanceof Wall) {
+      // Assume ball will collide with the wall in the next time step if we don't change its velocity
+      // Assume ball moving towards wall currently.
+      /*
+      Vector ball_pos = new Vector(x, y);
+      Vector ball_vel = new Vector(vx, vy);
+      float d1 = distance(w.p1, ball_pos);
+      float d2 = distance(w.p2, ball_pos);
+      float distance_along_wall = (w.line_len*w.line_len + d1*d1 - d2*d2) / (2*w.line_len);
+
+      Vector q;  // point on the wall closest to the ball's center
+      if (distance_along_wall <= 0) {
+        q = w.p1;
+      } else if (distance_along_wall >= w.line_len) {
+        q = w.p2;
+      } else {
+        q = w.p1.add(w.unit.multiply(distance_along_wall));
+      }
+
+      Vector new_ball_vel = DoImpact(ball_vel, q.subtract(ball_pos).unit(), -1.0);
+      vx = new_ball_vel.x;
+      vy = new_ball_vel.y;
+      */
+    } else if (other instanceof Ball) {
+      Ball ball = (Ball)other;
+      PVector n = ball.center.get();
+      n.sub(center);
+      n.normalize();
+           
+      //new Vector(other.x-x, other.y-y).unit();
+      PVector other_vel = ball.velocity;
+      PVector original_v1 = velocity.get(); //new Vector(vx, vy).subtract(other_vel);
+      original_v1.sub(other_vel);
+      
+      velocity = DoImpact(original_v1, n, (mass-ball.mass)/(mass+ball.mass));
+      velocity.add(other_vel);
+      ball.velocity = n.get();
+      ball.velocity.mult(2*mass/(mass+ball.mass) * original_v1.dot(n));
+      ball.velocity.add(other_vel);
+
+      //vx = new_v1.x;
+      //vy = new_v1.y;
+      //other.vx = new_v2.x;
+      //other.vy = new_v2.y;
+    } else {
+      println("Unknown type: " + other);
+    }
   }
 
 
