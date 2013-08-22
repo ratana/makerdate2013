@@ -27,10 +27,16 @@ class GameState implements ComponentCollection {
     }
   }
 
+  // This method is useful if you just added a component and it's colliding
+  // with others, so you want to remove it.
+  public void removeLastComponent() {
+    removeComponent(components.get(components.size()-1));
+  }
+
   public void clear() {
     components.clear();
   }
-  
+
   public void draw(Viewport viewport) {
     for (Component component : components) {
       component.draw(viewport);
@@ -66,8 +72,10 @@ class GameState implements ComponentCollection {
       for (i=(j+1) ; i<components.size() ; ++i) {
         if (components.get(j).isColliding(components.get(i))) {
           colliding = true;
-          if (colliding_pairs != null)
+          println("Colliding: " + i + " " + j);
+          if (colliding_pairs != null) {
             colliding_pairs.add(new Pair(j, i));
+          }
         }
       }
     }
@@ -87,7 +95,8 @@ class GameState implements ComponentCollection {
       Component obj2 = components.get(p.b);
       if (obj1 instanceof PlayableComponent) {
         ((PlayableComponent)obj1).Deflect(obj2);
-      } else if (obj2 instanceof PlayableComponent) {
+      } 
+      else if (obj2 instanceof PlayableComponent) {
         ((PlayableComponent)obj2).Deflect(obj1);
       }
     }
@@ -120,8 +129,8 @@ class GameState implements ComponentCollection {
     }
     float maxstep = 0.1 * min_radius / max_speed;
     final float minstep = 1e-4;
-    
-    
+
+
     float total_steps = 0.0;
     float step = maxstep;
     ArrayList<Pair> colliding_pairs = new ArrayList<Pair>();
@@ -144,10 +153,12 @@ class GameState implements ComponentCollection {
         if (step == minstep) {
           // Impacts array has been recorded in 'isColliding'
           HandleImpacts(colliding_pairs);
-        } else {
+        } 
+        else {
           step = max(step / 2.0, minstep);
         }
-      } else {
+      } 
+      else {
         step = min(step*2, maxstep);
       }
       counter += 1;

@@ -15,7 +15,7 @@ boolean MovingAway(PVector a, PVector b, PVector vel_a) {
   PVector n = a.get();
   n.sub(b);
   n.normalize();
-  
+
   // If the part of A's velocity that is along the B-->A direction is positive, then it's moving away.
   return (vel_a.dot(n)) > 0;
 }
@@ -23,5 +23,27 @@ boolean MovingAway(PVector a, PVector b, PVector vel_a) {
 void setRandomVelocity(Ball b) {
   b.velocity = new PVector(random(-1, 1), random(-1, 1));
 }
+
+
+// Distance from point to a line defined by (point1-->point2)
+float PointLineDistance(PVector point, PVector point1, PVector point2) {
+  // Compute point-line distance
+  // http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+  PVector n = PVector.sub(point2, point1);
+  n.normalize();
+  PVector ap = PVector.sub(point1, point);
+  return PVector.sub(ap, PVector.mult(n, ap.dot(n))).mag();
+}
+
+
+// Distance from point to a line defined by wall 'w'.
+float PointLineDistance(PVector point, Wall w) {
+  // Compute point-line distance
+  // http://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+  PVector n = w.unit;
+  PVector ap = PVector.sub(w.a.center, point);
+  return PVector.sub(ap, PVector.mult(n, ap.dot(n))).mag();
+}
+
 
 

@@ -70,7 +70,8 @@ public class Wall implements Component, ComponentCollection {
   protected Point a, b; // control points
   protected Area boundingBox;
   protected color objColor;
-  protected float len;
+  protected float len; // length of wall (distance between endpoints).
+  protected PVector unit; // unit vector in the direction along the wall, from the first to the second endpoint.
 
   public Wall(float topX, float topY, float botX, float botY, color objColor) {
     this.objColor = objColor;
@@ -82,7 +83,12 @@ public class Wall implements Component, ComponentCollection {
   }
 
   public boolean isColliding(Component other) {
-    // TODO(ciaran): Implement collision detection
+    if (other instanceof Ball) {
+      Ball ball = (Ball)other;
+      return ball.isColliding(this);
+    }
+    
+    // Walls are not considered colliding with each other, even if they overlap.    
     return false;
   }
 
@@ -104,6 +110,9 @@ public class Wall implements Component, ComponentCollection {
     boundingBox.height = abs((a.center.y)-(b.center.y)) + a.radius * 2;
 
     len = a.center.dist(b.center);
+    unit = PVector.sub(b.center, a.center);
+    unit.normalize();
+    println("Wall unit vector = "+unit);
 
     // resize control point/endpoint size
     float length = sqrt((a.center.x - b.center.x)*(a.center.x - b.center.x) + (a.center.y-b.center.y)*(a.center.y-b.center.y));
@@ -115,7 +124,8 @@ public class Wall implements Component, ComponentCollection {
   public Component componentAt(PVector location) {
     if (a.isPresent(location)) {
       return a;
-    } else if (b.isPresent(location)) {
+    } 
+    else if (b.isPresent(location)) {
       return b;
     }
     return this;
@@ -190,16 +200,20 @@ public class Point implements Component {
   }
 
   public boolean isColliding(Component other) {
-    if (other instanceof Ball) {
+    if (other instanceof Point) {
       // TODO(ciaran): update this to return false if they're moving away.
-      Ball ball = (Ball)other;
-      if (center.dist(ball.center) < (radius + ball.radius)) {
+      Point point = (Point)other;
+      if (center.dist(point.center) < (radius + point.radius)) {
         return true;
       }
       return false;
     }
-    
-    // TODO(ciaran): Implement WALL collision detection
+
+    if (other instanceof Wall) {
+      Wall w = (Wall)other;
+      float line_dist = PointLineDistance(center, w);
+      return line_dist < radius;
+    }
     return false;
   }
 
@@ -276,47 +290,85 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
     if (other instanceof Wall) {
       // Assume ball will collide with the wall in the next time step if we don't change its velocity
       // Assume ball moving towards wall currently.
-      
-      // TODO(ciaran): finish porting this code.
-      /*
-      Vector ball_pos = new Vector(x, y);
-      Vector ball_vel = new Vector(vx, vy);
-      float d1 = distance(w.p1, ball_pos);
-      float d2 = distance(w.p2, ball_pos);
-      float distance_along_wall = (w.line_len*w.line_len + d1*d1 - d2*d2) / (2*w.line_len);
 
-      Vector q;  // point on the wall closest to the ball's center
+      Wall w = (Wall)other;
+      PVector ball_pos = center;
+      PVector ball_vel = velocity;
+      float d1 = PVector.dist(w.a.center, center);
+      float d2 = PVector.dist(w.b.center, center);
+      float distance_along_wall = (w.len*w.len + d1*d1 - d2*d2) / (2*w.len);
+      
+      PVector q;  // point on the wall closest to the ball's center
       if (distance_along_wall <= 0) {
-        q = w.p1;
-      } else if (distance_along_wall >= w.line_len) {
-        q = w.p2;
-      } else {
-        q = w.p1.add(w.unit.multiply(distance_along_wall));
+        q = w.a.center.get();
+      } 
+      else if (distance_along_wall >= w.len) {
+        q = w.b.center.get();
+      } 
+      else {
+        PVector v_unit = w.unit.get();
+        v_unit.mult(distance_along_wall);
+        q = PVector.add(w.a.center, v_unit); // .add(w.unit.multiply(distance_along_wall));
       }
 
-      Vector new_ball_vel = DoImpact(ball_vel, q.subtract(ball_pos).unit(), -1.0);
-      vx = new_ball_vel.x;
-      vy = new_ball_vel.y;
-      */
-    } else if (other instanceof Ball) {
+      q.sub(center);
+      q.normalize();
+      velocity = DoImpact(velocity, q, -1.0);
+    } 
+    else if (other instanceof Ball) {
       Ball ball = (Ball)other;
       PVector n = ball.center.get();
       n.sub(center);
       n.normalize();
-           
-      //new Vector(other.x-x, other.y-y).unit();
+
       PVector other_vel = ball.velocity;
       PVector original_v1 = velocity.get(); 
       original_v1.sub(other_vel);
-      
+
       velocity = DoImpact(original_v1, n, (mass-ball.mass)/(mass+ball.mass));
       velocity.add(other_vel);
       ball.velocity = n.get();
       ball.velocity.mult(2*mass/(mass+ball.mass) * original_v1.dot(n));
       ball.velocity.add(other_vel);
-    } else {
+    } 
+    else {
       println("Unknown type: " + other);
     }
+  }
+
+
+  public boolean isColliding(Component other) {
+    if (other instanceof Point) {
+      return super.isColliding(other);
+    } 
+    else if (other instanceof Wall) {
+      Wall w = (Wall)other;
+
+      float d1 = PVector.dist(w.a.center, center);
+      float d2 = PVector.dist(w.b.center, center);
+      float distance_along_wall = (w.len*w.len + d1*d1 - d2*d2) / (2*w.len);
+      // q = point on the wall closest to the ball's center: a + distance_along_wall * unit
+      PVector q = PVector.add(w.a.center, PVector.mult(w.unit, distance_along_wall));
+
+      if ((distance_along_wall > 0) && (distance_along_wall < w.len)) {
+        // Ball will hit in the middle of the wall somewhere.
+        float line_dist = PointLineDistance(center, w);
+        if (line_dist > radius) return false;
+        return !MovingAway(center, q, velocity);
+      } 
+      else if (distance_along_wall <= 0) {
+        // Ball will hit end-point 1.
+        if (d1 > radius) return false;
+        return !MovingAway(center, w.a.center, velocity);
+      } 
+      else {
+        assert (distance_along_wall >= w.len);
+        // Ball will hit end-point 2.
+        if (d2 > radius) return false;
+        return !MovingAway(center, w.b.center, velocity);
+      }
+    }
+    return false;
   }
 
 
@@ -335,7 +387,8 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
   public Component componentAt(PVector location) {
     if (a.isPresent(location)) {
       return a;
-    } else if (b.isPresent(location)) {
+    } 
+    else if (b.isPresent(location)) {
       return b;
     }
     return this;
@@ -436,7 +489,8 @@ public class Box implements Component, ComponentCollection {
   public Component componentAt(PVector location) {
     if (a.isPresent(location)) {
       return a;
-    } else if (b.isPresent(location)) {
+    } 
+    else if (b.isPresent(location)) {
       return b;
     }
     return this;
