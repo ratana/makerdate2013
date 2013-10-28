@@ -1,6 +1,7 @@
 
-private ControlLoop currentLoop, demoApp, gameApp;
+private ControlLoop currentLoop, editorApp, gameApp;
 private Area uiArea;
+private String activeLoopTitle = "Game";
 
 void setup() {
   int totalWidth = 1200;
@@ -13,7 +14,7 @@ void setup() {
   
   Viewport appViewport = new Viewport(appArea);
   
-  demoApp = new LevelDesigner(appViewport);  
+  editorApp = new LevelDesigner(appViewport);  
   
   gameApp = new GameApp(appViewport);
   
@@ -47,10 +48,12 @@ void mouseClicked () {
   currentLoop.mouseClicked();
 
   if (uiArea.isPresent(new PVector(mouseX, mouseY))) {
-    if (currentLoop == demoApp) {
+    if (currentLoop == editorApp) {
       currentLoop = gameApp;
+      activeLoopTitle = "Game";
     } else {
-      currentLoop = demoApp;
+      currentLoop = editorApp;
+      activeLoopTitle = "Editor";
     }
   }
 }
@@ -60,5 +63,29 @@ void drawUI() {
   fill(25);
   rect(uiArea.origin.x, uiArea.origin.y, uiArea.width, uiArea.height);
   fill(255);
-  text("click here to switch control loops", uiArea.origin.x + 100, uiArea.origin.y + uiArea.height/2);
+  text(activeLoopTitle, uiArea.origin.x + 100, uiArea.origin.y + uiArea.height/2);
+}
+
+// NOTE: this must be a global function to work with selectOutput()
+void onSaveLevel(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("User selected " + selection.getAbsolutePath());    
+    // call back to editor
+    Editor editor = (Editor)((LevelDesigner)editorApp).getEditor();
+    editor.saveLevelCallback(selection);
+  }
+}
+
+// NOTE: this must be a global function to work with selectOutput()
+void onOpenLevel(File selection) {
+  if (selection == null) {
+    println("Window was closed or the user hit cancel.");
+  } else {
+    println("User selected " + selection.getAbsolutePath());    
+    // call back to editor
+    Editor editor = (Editor)((LevelDesigner)editorApp).getEditor();
+    editor.openLevelCallback(selection);
+  }
 }

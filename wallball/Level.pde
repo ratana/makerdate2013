@@ -1,10 +1,50 @@
-class Level {
+public class Level {
   private GameState initialState, currentState;
+  private String name = "<< new level >>";
+  private String author = "<< author >>";
+
+  public void setLevelName(String name) {
+    this.name = name;
+  }
+  public String getLevelName() { 
+    return name;
+  }
+
+  public void setAuthor(String author) {
+    this.author = author;
+  }
+  public String getAuthor() { 
+    return author;
+  }  
+
   public GameState getCurrentState() { 
     return currentState;
   }
   public GameState getInitialState() { 
     return initialState;
+  }
+
+  public Level(JSONObject json) {
+    //TODO: construct from JSON.
+    name = json.getString("name");
+    author = json.getString("author");
+    initialState = new GameState(json.getJSONObject("initialState"));
+    // TODO: clone
+    currentState = initialState;
+  }
+
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    json.setString("name", name);
+    json.setString("author", author);
+    json.setJSONObject("initialState", initialState.toJSONObject());
+    return json;
+  }
+
+  public Level(GameState initialState) {
+    this.initialState = initialState;
+    // TODO: clone
+    currentState = initialState;
   }
 
   //TODO: serialize/deserialize to text or json .. ie: public static Level fromJSON(JSONString) {} 

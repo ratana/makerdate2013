@@ -9,11 +9,13 @@ public class DesignRenderer implements Renderer {
       mouseVector.x = mouseX;
       mouseVector.y = mouseY;
       viewport.screenToWorld(mouseVector);
-      for (Component component : gameState.getComponents()) {
-        if (component.isPresent(mouseVector)) {
-          component.drawBounds(viewport);
+      if (gameState != null && gameState.getComponents() != null) {
+        for (Component component : gameState.getComponents()) {
+          if (component.isPresent(mouseVector)) {
+            component.drawBounds(viewport);
+          }
+          component.draw(viewport);
         }
-        component.draw(viewport);
       }
   }
 }

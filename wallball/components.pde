@@ -1,4 +1,27 @@
 /**
+ * ComponentFactory - constructs components from JSON
+ */
+public class ComponentFactory {
+  public Component componentForJSONObject(JSONObject json) {
+    String objectClass = json.getString("object_class");
+    println("compoent for: " + objectClass);
+    if (objectClass.equals("Ball")) {
+      return new Ball(json);
+    } 
+    else if (objectClass.equals("Wall")) {
+      return new Wall(json);
+    } 
+    else if (objectClass.equals("Box")) {
+      return new Box(json);
+    } 
+    else {
+      println("unrecognized type: " + objectClass);
+      return null;
+    }
+  }
+}
+
+/**
  * Renderer - 
  */
 public interface Renderer {  
@@ -33,6 +56,11 @@ public interface Component {
   Are these two components colliding?
    */
   public boolean isColliding(Component other);
+
+  /**
+   * serialized JSONObject
+   */
+  public JSONObject toJSONObject();
 }
 
 
@@ -73,13 +101,21 @@ public class Wall implements Component, ComponentCollection {
   protected float len; // length of wall (distance between endpoints).
   protected PVector unit; // unit vector in the direction along the wall, from the first to the second endpoint.
 
-  public Wall(float topX, float topY, float botX, float botY, color objColor) {
+  public Wall(JSONObject json) {
+    this(new Point(json.getJSONObject("a")), new Point(json.getJSONObject("b")), color(unhex(json.getString("color"))));
+  }
+
+  public Wall(Point a, Point b, color objColor) {
+    this.a = a;
+    this.b = b;
     this.objColor = objColor;
-    a = new Point(topX, topY, CONTROL_RADIUS, objColor);
-    b = new Point(botX, botY, CONTROL_RADIUS, objColor);
 
     this.boundingBox = new Area(min(a.center.x, b.center.x), min(a.center.y, b.center.y), abs(a.center.x-b.center.x), abs(a.center.y-b.center.y));
     updateGeometry();
+  }
+
+  public Wall(float topX, float topY, float botX, float botY, color objColor) {
+    this(new Point(topX, topY, CONTROL_RADIUS, objColor), new Point(botX, botY, CONTROL_RADIUS, objColor), objColor);
   }
 
   public boolean isColliding(Component other) {
@@ -87,7 +123,7 @@ public class Wall implements Component, ComponentCollection {
       Ball ball = (Ball)other;
       return ball.isColliding(this);
     }
-    
+
     // Walls are not considered colliding with each other, even if they overlap.    
     return false;
   }
@@ -170,6 +206,15 @@ public class Wall implements Component, ComponentCollection {
     line(viewport.origin.x + viewport.scaleValue(a.center.x), viewport.origin.y + viewport.scaleValue(a.center.y), 
     viewport.origin.x + viewport.scaleValue(b.center.x), viewport.origin.y + viewport.scaleValue(b.center.y));
   }
+
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    json.setString("object_class", "Wall");
+    json.setJSONObject("a", a.toJSONObject());
+    json.setJSONObject("b", b.toJSONObject());    
+    json.setString("color", hex(objColor)); 
+    return json;
+  }
 }
 
 /**
@@ -185,6 +230,11 @@ public class Point implements Component {
   // Suggestion: (i) Remove boundingBox, and only compute it inside isPresent()
   // or (ii) If Component was implemented as an abstract class instead of an interface, you could give it an 'editable' boolean flag.
   // When set to true (in the LevelDesigner), it would update boundingBox. When false, in the game, it would not update it.
+
+  // NOTE FROM ADAM: I believe that the boundingbox is only computed when drawbounds is called, and that is only done in the design renderer -- but I agree,
+  // this is a clunky way to do things, and it should be refactored.. The level editor should perhaps instead "decorate" these objects and add such things, rather than
+  // they be inherent to the objects themselves if not necessary.
+
   protected Area boundingBox;
   protected PVector center;
   protected float radius;
@@ -228,6 +278,11 @@ public class Point implements Component {
     boundingBox.width = radius*2;
     boundingBox.height = radius*2;
   }
+  
+  public Point(JSONObject json) {
+    this(PVectorFromJSONObject(json.getJSONObject("center")).x, PVectorFromJSONObject(json.getJSONObject("center")).y,
+      json.getFloat("radius"), color(unhex(json.getString("color"))));
+  }
 
   public Point(float x, float y, float radius, color objColor) {
     this.objColor = objColor;
@@ -254,6 +309,15 @@ public class Point implements Component {
     fill(objColor);
     ellipse(viewport.origin.x + viewport.scaleValue(center.x), viewport.origin.y + viewport.scaleValue(center.y), viewport.scaleValue(radius), viewport.scaleValue(radius));
   }
+
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    json.setString("object_class", "Point");
+    json.setJSONObject("center", PVectorToJSONObject(center));
+    json.setFloat("radius", radius);
+    json.setString("color", hex(objColor)); 
+    return json;
+  }
 }
 
 /**
@@ -267,6 +331,18 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
   protected PVector velocity;
   float mass;
 
+  public Ball(JSONObject json) {
+    this(PVectorFromJSONObject(json.getJSONObject("center")), 
+    json.getFloat("radius"), 
+    color(unhex(json.getString("color"))), 
+    PVectorFromJSONObject(json.getJSONObject("velocity")), 
+    json.getFloat("mass")
+      );
+  }
+
+  public Ball(PVector centerPoint, float radius, color objColor, PVector velocityVector, float mass) {
+    this(centerPoint.x, centerPoint.y, radius, objColor, velocityVector.x, velocityVector.y, mass);
+  }
 
   public Ball(float x, float y, float radius, color objColor, float vx, float vy, float mass) {
     super(x, y, radius, objColor);
@@ -297,7 +373,7 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
       float d1 = PVector.dist(w.a.center, center);
       float d2 = PVector.dist(w.b.center, center);
       float distance_along_wall = (w.len*w.len + d1*d1 - d2*d2) / (2*w.len);
-      
+
       PVector q;  // point on the wall closest to the ball's center
       if (distance_along_wall <= 0) {
         q = w.a.center.get();
@@ -420,6 +496,16 @@ public class Ball extends Point implements PlayableComponent, ComponentCollectio
     a.moveTo(center.x-radius+a.radius, center.y-radius+a.radius);
     b.moveTo(center.x+radius-a.radius, center.y+radius-a.radius);
   }
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    json.setString("object_class", "Ball");
+    json.setString("color", hex(objColor));
+    json.setJSONObject("center", PVectorToJSONObject(center));
+    json.setJSONObject("velocity", PVectorToJSONObject(velocity));
+    json.setFloat("radius", radius);    
+    json.setFloat("mass", mass);
+    return json;
+  }
 } 
 
 /**
@@ -431,6 +517,11 @@ public class Box implements Component, ComponentCollection {
   // TODO: add 2 more control points
   protected Area boundingBox;
   protected color objColor;  
+  protected float topX, topY, botX, botY;
+
+  public Box(JSONObject json) {
+    this(json.getFloat("topX"), json.getFloat("topY"), json.getFloat("botX"), json.getFloat("botY"), color(unhex(json.getString("color"))));
+  }
 
   public Box(float topX, float topY, float botX, float botY, color objColor) {
     this.objColor = objColor;
@@ -495,5 +586,28 @@ public class Box implements Component, ComponentCollection {
     }
     return this;
   }
+
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    json.setString("object_class", "Box");
+    json.setString("color", hex(objColor));
+    json.setFloat("topX", boundingBox.origin.x);
+    json.setFloat("topY", boundingBox.origin.y);
+    json.setFloat("botX", boundingBox.origin.x + boundingBox.width);
+    json.setFloat("botY", boundingBox.origin.y + boundingBox.height);
+    return json;
+  }
 }
 
+
+// static utlity methods
+public static JSONObject PVectorToJSONObject(PVector vector) {
+  JSONObject json = new JSONObject();
+  json.setFloat("x", vector.x);
+  json.setFloat("y", vector.y);
+  return json;
+}
+
+public static PVector PVectorFromJSONObject(JSONObject json) {
+  return new PVector(json.getFloat("x"), json.getFloat("y"));
+}

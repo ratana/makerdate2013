@@ -12,9 +12,18 @@ class Pair {
 
 class GameState implements ComponentCollection {
   private ArrayList<Component> components = new ArrayList<Component>();
-
-  public ArrayList<Component> getComponents() { 
-    return components;
+  public ArrayList<Component> getComponents() { return components; }
+  
+  public GameState() {
+  }
+  public GameState(JSONObject json) {
+    this();
+    ComponentFactory componentFactory = new ComponentFactory();
+    JSONArray componentArray = json.getJSONArray("components");
+    for (int i = 0; i < componentArray.size(); i++) {
+      JSONObject componentJSON = componentArray.getJSONObject(i);
+      addComponent(componentFactory.componentForJSONObject(componentJSON));
+    }
   }
 
   public void addComponent(Component component) {
@@ -164,6 +173,19 @@ class GameState implements ComponentCollection {
       counter += 1;
     } 
     while ( (total_steps < required_timestep) && (counter < 100));
+  }
+
+  public JSONObject toJSONObject() {
+    JSONObject json = new JSONObject();
+    JSONArray componentArray = new JSONArray();
+    int count = 0;
+    for (Component component: components) {
+      componentArray.setJSONObject(count++, component.toJSONObject());
+    }
+
+    json.setJSONArray("components", componentArray);
+
+    return json;
   }
 }
 

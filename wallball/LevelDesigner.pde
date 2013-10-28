@@ -2,59 +2,68 @@ public class LevelDesigner extends ControlLoop {
   private Component selectedComponent;
   private PVector mouseVector = new PVector(mouseX, mouseY);
   private Viewport gameScreen;
-  private Viewport editorScreen;
-  private Renderer gameRenderer, editorRenderer;
-  private Level currentLevel;
+  private Viewport editorControlsScreen;
+  private Renderer designRenderer;
+  private Editor editor;
+  
+  public Editor getEditor() { return editor; }
 
   // TODO: would be nice to be able to test the game view, maybe put a bouncing ball in it, with a reset button
-
   public LevelDesigner(Viewport viewport) {
     super(viewport);
-    currentLevel = new Level(); // TODO: pass this to the level designer
-    gameRenderer = new GameRenderer();
-    editorRenderer = new DesignRenderer();
-    gameScreen = new Viewport(viewport.origin.x, viewport.origin.y, viewport.width/2, viewport.height);
-    editorScreen = new Viewport(viewport.origin.x + viewport.width/2, viewport.origin.y, viewport.width/4, viewport.height/2);
+    designRenderer = new DesignRenderer();
+    gameScreen = new Viewport(viewport.origin.x, viewport.origin.y, viewport.width/2, viewport.height);    
+    editorControlsScreen = new Viewport(viewport.origin.x + viewport.width/2, viewport.origin.y, viewport.width/2, viewport.height);    
+    editor = new Editor(editorControlsScreen, new Level());
   }
 
   @Override
-  public void draw() {
+    public void draw() {
     super.draw();
     stroke(0);
     fill(50);
-    rect(0,0,width,height);
-    
-    stroke(100);
-    fill(100);
-    rect(editorScreen.origin.x, editorScreen.origin.y, editorScreen.width, editorScreen.height);
-    editorRenderer.draw(currentLevel.getCurrentState(), editorScreen);
-    
+    rect(0, 0, width, height);
+
+//    stroke(100);
+//    fill(100);
+//    rect(editorScreen.origin.x, editorScreen.origin.y, editorScreen.width, editorScreen.height);
+//    designRenderer.draw(currentLevel.getInitialState(), editorScreen);
+
     stroke(0);
     fill(0);
     rect(gameScreen.origin.x, gameScreen.origin.y, gameScreen.width, gameScreen.height);
-    gameRenderer.draw(currentLevel.getCurrentState(), gameScreen);
+    designRenderer.draw(editor.getLevel().getInitialState(), gameScreen);
+
+    editor.draw();
   }
 
   @Override
-  public void mouseDragged() {
+    public void mouseDragged() {
     if (isMouseInBounds()) {
       if (selectedComponent != null) {
         mouseVector.x = mouseX;
         mouseVector.y = mouseY;
-        editorScreen.screenToWorld(mouseVector);
+        gameScreen.screenToWorld(mouseVector);
         selectedComponent.moveTo(mouseVector);
       }
     }
+    editor.mouseDragged();
   }
-  
+
   @Override
-  public void mousePressed() {
+    public void mousePressed() {
     // select a game state component when the mouse is first pressed.
     if (isMouseInBounds()) {
       mouseVector.x = mouseX;
       mouseVector.y = mouseY;
-      editorScreen.screenToWorld(mouseVector);
-      selectedComponent = currentLevel.getCurrentState().componentAt(mouseVector);
+      gameScreen.screenToWorld(mouseVector);
+      selectedComponent = editor.getLevel().getInitialState().componentAt(mouseVector);
     }
+    editor.mousePressed();
   }  
+
+  @Override
+    public void mouseReleased() {
+    editor.mouseReleased();
+  }
 }
