@@ -3,6 +3,11 @@
  */
 public class DesignRenderer implements Renderer {
     private PVector mouseVector = new PVector();
+    private Component selectedComponent = null;
+    public void setSelectedComponent(Component component) {
+      selectedComponent = component;
+    }
+    
     public void draw(GameState gameState, Viewport viewport) {
       stroke(0);
       fill(0);
@@ -11,7 +16,7 @@ public class DesignRenderer implements Renderer {
       viewport.screenToWorld(mouseVector);
       if (gameState != null && gameState.getComponents() != null) {
         for (Component component : gameState.getComponents()) {
-          if (component.isPresent(mouseVector)) {
+          if (component.isPresent(mouseVector) || component == selectedComponent) {
             component.drawBounds(viewport);
           }
           component.draw(viewport);

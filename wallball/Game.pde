@@ -4,6 +4,7 @@ public class Game {
   public Game() {
       // TODO: load levels from a level pack?
       levels = new ArrayList<Level>();
+      //levels.add(new Level(loadJSONObject("/users/ratana/Desktop/wallball_test_3")));
       levels.add(new Level());
   }
   

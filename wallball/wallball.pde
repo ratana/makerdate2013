@@ -71,19 +71,19 @@ void onSaveLevel(File selection) {
   if (selection == null) {
     println("Window was closed or the user hit cancel.");
   } else {
-    println("User selected " + selection.getAbsolutePath());    
+    println("onSaveLevel: User selected " + selection.getAbsolutePath());    
     // call back to editor
     Editor editor = (Editor)((LevelDesigner)editorApp).getEditor();
     editor.saveLevelCallback(selection);
   }
 }
 
-// NOTE: this must be a global function to work with selectOutput()
+// NOTE: this must be a global function to work with selectInput()
 void onOpenLevel(File selection) {
   if (selection == null) {
     println("Window was closed or the user hit cancel.");
   } else {
-    println("User selected " + selection.getAbsolutePath());    
+    println("onOpenLevel: User selected " + selection.getAbsolutePath());    
     // call back to editor
     Editor editor = (Editor)((LevelDesigner)editorApp).getEditor();
     editor.openLevelCallback(selection);

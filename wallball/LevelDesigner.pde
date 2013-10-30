@@ -3,8 +3,9 @@ public class LevelDesigner extends ControlLoop {
   private PVector mouseVector = new PVector(mouseX, mouseY);
   private Viewport gameScreen;
   private Viewport editorControlsScreen;
-  private Renderer designRenderer;
+  private DesignRenderer designRenderer;
   private Editor editor;
+  private boolean componentMovement = false;
   
   public Editor getEditor() { return editor; }
 
@@ -24,14 +25,13 @@ public class LevelDesigner extends ControlLoop {
     fill(50);
     rect(0, 0, width, height);
 
-//    stroke(100);
-//    fill(100);
-//    rect(editorScreen.origin.x, editorScreen.origin.y, editorScreen.width, editorScreen.height);
-//    designRenderer.draw(currentLevel.getInitialState(), editorScreen);
-
     stroke(0);
     fill(0);
     rect(gameScreen.origin.x, gameScreen.origin.y, gameScreen.width, gameScreen.height);
+    
+    // TODO: a bit awkward
+    // always refresh this as the editor may have removed or selected something new
+    designRenderer.setSelectedComponent(editor.getSelectedComponent());
     designRenderer.draw(editor.getLevel().getInitialState(), gameScreen);
 
     editor.draw();
@@ -44,7 +44,9 @@ public class LevelDesigner extends ControlLoop {
         mouseVector.x = mouseX;
         mouseVector.y = mouseY;
         gameScreen.screenToWorld(mouseVector);
-        selectedComponent.moveTo(mouseVector);
+        if (selectedComponent.isPresent(mouseVector) || componentMovement) {
+          selectedComponent.moveTo(mouseVector);
+        }
       }
     }
     editor.mouseDragged();
@@ -57,13 +59,27 @@ public class LevelDesigner extends ControlLoop {
       mouseVector.x = mouseX;
       mouseVector.y = mouseY;
       gameScreen.screenToWorld(mouseVector);
-      selectedComponent = editor.getLevel().getInitialState().componentAt(mouseVector);
+      Component componentAtMouse = editor.getLevel().getInitialState().componentAt(mouseVector);
+      if (componentAtMouse == null && gameScreen.isPresent(mouseX, mouseY)) {
+        selectedComponent = null;
+        designRenderer.setSelectedComponent(null);
+        editor.setSelectedComponent(null);
+        componentMovement = false;
+      } else if (componentAtMouse != null) { 
+        componentMovement = true;
+        selectedComponent = componentAtMouse;
+        designRenderer.setSelectedComponent(selectedComponent);
+        editor.setSelectedComponent(selectedComponent);
+      }
     }
+    
     editor.mousePressed();
   }  
 
   @Override
     public void mouseReleased() {
-    editor.mouseReleased();
+      componentMovement = false;
+      editor.mouseReleased();
+    
   }
 }
