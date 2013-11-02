@@ -5,7 +5,7 @@ public class LevelDesigner extends ControlLoop {
   private Viewport editorControlsScreen;
   private DesignRenderer designRenderer;
   private Editor editor;
-  private boolean componentMovement = false;
+  private boolean componentMovement = false, sameComponent = false;
   
   public Editor getEditor() { return editor; }
 
@@ -59,7 +59,8 @@ public class LevelDesigner extends ControlLoop {
       mouseVector.x = mouseX;
       mouseVector.y = mouseY;
       gameScreen.screenToWorld(mouseVector);
-      Component componentAtMouse = editor.getLevel().getInitialState().componentAt(mouseVector);
+      GameState gameState = editor.getLevel().getInitialState();
+      Component componentAtMouse = gameState.componentAt(mouseVector);
       if (componentAtMouse == null && gameScreen.isPresent(mouseX, mouseY)) {
         selectedComponent = null;
         designRenderer.setSelectedComponent(null);
@@ -67,7 +68,31 @@ public class LevelDesigner extends ControlLoop {
         componentMovement = false;
       } else if (componentAtMouse != null) { 
         componentMovement = true;
-        selectedComponent = componentAtMouse;
+        if (selectedComponent == componentAtMouse) {
+          // if we tap on the same component twice, assume we want to go to the next one under the mouse position, if one exists
+          if (sameComponent) {
+            // cycle through other components under the given mouse position
+            ArrayList<Component> componentsUnder = gameState.componentsAt(mouseVector);
+            if (componentsUnder.size() > 1) {
+              // find index of selected component, cycling backwards.
+              int newIndex = componentsUnder.indexOf(componentAtMouse) - 1;
+              if (newIndex < 0) {
+                newIndex = componentsUnder.size()-1;
+              }
+              selectedComponent = componentsUnder.get(newIndex);
+              
+              // bring selected component
+              gameState.removeComponent(selectedComponent);
+              gameState.addComponent(selectedComponent);
+              sameComponent = false;
+            }
+          } else {
+            sameComponent = true;
+          }
+        } else {
+          sameComponent = false;
+          selectedComponent = componentAtMouse;
+        }
         designRenderer.setSelectedComponent(selectedComponent);
         editor.setSelectedComponent(selectedComponent);
       }

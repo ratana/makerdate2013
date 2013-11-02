@@ -53,18 +53,28 @@ class GameState implements ComponentCollection {
   }
 
   public Component componentAt(PVector objLocation) {
-    // TODO: search from last to first, or implement a z-Index
-    for (Component component : components) {
+    // get from last to first
+    for (int i = components.size()-1; i >= 0; i--) {
+      Component component = components.get(i);
       if (component.isPresent(objLocation)) {
-
         if (component instanceof ComponentCollection) {
           return ((ComponentCollection)component).componentAt(objLocation);
         }
-
         return component;
       }
     }
     return null;
+  }
+  
+  public ArrayList<Component> componentsAt(PVector objLocation) {
+    ArrayList<Component> values = new ArrayList<Component>();
+    for (int i = components.size()-1; i >= 0; i--) {
+      Component component = components.get(i);
+      if (component.isPresent(objLocation)) {
+        values.add(component);
+      }
+    }
+    return values;
   }
 
 
